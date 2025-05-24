@@ -1,6 +1,9 @@
 # MLMatrix
 MLMatrix is almost like cmatrix, but with ML instead of C. Made with [Nim](https://nim-lang.org/).
 
+Example of MLMatrix in Windows Terminal using [Apocalypse CRT](https://github.com/maddestlabs/apocalypse-crt) shader:
+[![Apocalypse CRT in Windows Terminal](https://raw.githubusercontent.com/maddestlabs/apocalypse-crt/refs/heads/main/screenshots/apocalypse-crt-mlmatrix.jpg 'Apocalypse CRT')](https://youtu.be/ajy2HMS3IYE)
+
 ## Why another Matrix?
 We're actually creating a game that uses practically the same logic. This project provides a clean base for that other project, tba.
 
