@@ -1,5 +1,5 @@
 # MLMatrix
-MLMatrix is almost like cmatrix, but with ML instead of C. Made with [Nim](https://nim-lang.org/).
+MLMatrix is almost like cmatrix, but made in [Nim](https://nim-lang.org/) with lots of help from ML (Machine Learning, or AI).
 
 Example of MLMatrix in Windows Terminal using [Apocalypse CRT](https://github.com/maddestlabs/apocalypse-crt) shader:
 [![Apocalypse CRT in Windows Terminal](https://raw.githubusercontent.com/maddestlabs/apocalypse-crt/refs/heads/main/screenshots/apocalypse-crt-mlmatrix.jpg 'Apocalypse CRT')](https://youtu.be/ajy2HMS3IYE)
@@ -18,8 +18,10 @@ Installing is easy. Ensure Nim is installed. Then ...
 git clone https://github.com/maddestlabs/mlmatrix/
 nim c d:release mlmatrix.nim
 ```
+This will generate the executable.
 
 ## Usage
+Enter `./mlmatrix` to run the executable.  
 Enter `./mlmatrix -h` for help:
 ```
 Matrix Rain Effect in Nim
