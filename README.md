@@ -1,11 +1,11 @@
 # MLMatrix
-MLMatrix is almost like [cmatrix](https://github.com/abishekvashok/cmatrix), but made in [Nim](https://nim-lang.org/) with lots of help from ML (Machine Learning, or AI).
+MLMatrix is almost like [cmatrix](https://github.com/abishekvashok/cmatrix), but made in [Nim](https://nim-lang.org/) with lots of help from ML (Machine Learning, or AI). Specifically, [Claude](https://claude.ai/new) was used to write the initial code and then, for troubleshooting and adding features.
 
 Example of MLMatrix in Windows Terminal using [Apocalypse CRT](https://github.com/maddestlabs/apocalypse-crt) shader:
 [![Apocalypse CRT in Windows Terminal](https://raw.githubusercontent.com/maddestlabs/apocalypse-crt/refs/heads/main/screenshots/apocalypse-crt-mlmatrix.jpg 'Apocalypse CRT')](https://youtu.be/ajy2HMS3IYE)
 
 ## Why another Matrix?
-We're actually creating a game that uses practically the same logic. This project provides a clean base for that other project, TBA. But also, we just wanted a version of cmatrix that
+We're actually creating a game that uses similar logic. This project provides a clean base for that other project, TBA. We also wanted a version of cmatrix with custom character support, one that's just as easily available (cmatrix is probably in every Linux distro) but without needing to add a repo. Nim makes that possible. Nim compilation is practically as fast as installing an app from a custom repo.
 
 ## Features
 - Made with Nim, compilation takes maybe 2 seconds.
