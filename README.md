@@ -1,6 +1,8 @@
 # MLMatrix
 MLMatrix is almost like [cmatrix](https://github.com/abishekvashok/cmatrix), but made in [Nim](https://nim-lang.org/) with lots of help from ML (Machine Learning, or AI). Specifically, [Claude](https://claude.ai/new) was used to write the initial code and then, for troubleshooting and adding features.
 
+Try it out and and easily configure it via JavaScript (converted via Claude): [Web version](https://maddestlabs.github.io/mlmatrix/)
+
 Example of MLMatrix in Windows Terminal using [Apocalypse CRT](https://github.com/maddestlabs/apocalypse-crt) shader:
 [![Apocalypse CRT in Windows Terminal](https://raw.githubusercontent.com/maddestlabs/apocalypse-crt/refs/heads/main/screenshots/apocalypse-crt-mlmatrix.jpg 'Apocalypse CRT')](https://youtu.be/ajy2HMS3IYE)
 
