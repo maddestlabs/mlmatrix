@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLMatrix</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+        
+        #matrixCanvas {
+            flex: 1;
+            display: block;
+            background: #000;
+        }
+        
+        .sidebar {
+            background: rgba(0, 0, 0, 0.9);
+            border-left: 1px solid #0f0;
+            padding: 20px;
+            overflow-y: auto;
+            height: 100vh;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+            position: relative;
+            z-index: 100;
+            resize: none;
+            flex-shrink: 0; /* Prevent flexbox from overriding our width */
+            box-sizing: border-box;
+        }
+        
+        .sidebar:not(.hidden) {
+            transition: none; /* Disable transition during resize */
+        }
+        
+        .sidebar.hidden {
+            transform: translateX(100%);
+        }
+        
+        .resize-handle {
+            position: absolute;
+            left: -5px;
+            top: 0;
+            width: 10px;
+            height: 100%;
+            cursor: col-resize;
+            background: transparent;
+            z-index: 101;
+            border-left: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+        
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            border-left-color: #0f0;
+        }
+        
+        .resize-handle::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 3px;
+            height: 30px;
+            background: #333;
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .resize-handle:hover::before,
+        .resize-handle.dragging::before {
+            opacity: 1;
+            background: #0f0;
+        }
+        
+        .sidebar h2 {
+            color: #0f0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .repo-link {
+            display: block;
+            text-align: center;
+            color: #888;
+            text-decoration: none;
+            font-size: 10px;
+            margin-bottom: 15px;
+            transition: color 0.2s;
+        }
+        
+        .repo-link:hover {
+            color: #0f0;
+            text-decoration: underline;
+        }
+        
+        .toggle-sidebar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            z-index: 200;
+            transition: all 0.2s;
+            border-radius: 3px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .toggle-sidebar:hover {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #0f0;
+            font-weight: bold;
+        }
+        
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            background: #111;
+            border: 1px solid #333;
+            color: #0f0;
+            padding: 8px;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: #0f0;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+        
+        .control-group input[type="range"] {
+            background: #111;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #0f0;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .range-value {
+            font-size: 11px;
+            color: #888;
+            text-align: right;
+            margin-top: 2px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            flex: 1;
+            background: #222;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        .info {
+            margin-top: 20px;
+            font-size: 10px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .url-display {
+            background: #111;
+            border: 1px solid #333;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 9px;
+            word-break: break-all;
+            color: #888;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        
+        .nim-command {
+            background: #111;
+            border: 1px solid #333;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 9px;
+            color: #0f0;
+            font-family: monospace;
+            word-break: break-all;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .nim-command::before {
+            content: "Nim command: ";
+            color: #666;
+            font-weight: bold;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .preset-buttons button {
+            font-size: 10px;
+            padding: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: #111;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #0f0;
+        }
+        
+        @media (max-width: 768px) {
+            .toggle-sidebar {
+                top: 10px;
+                right: 10px;
+                padding: 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Mobile specific styles but no width constraints */
+        }
+        
+        @media (max-height: 600px) {
+            .control-group {
+                margin-bottom: 15px;
+            }
+            
+            .sidebar {
+                padding: 15px;
+            }
+            
+            .sidebar h2 {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="toggle-sidebar" onclick="toggleSidebar()" id="toggleBtn">☰</button>
+    <canvas id="matrixCanvas"></canvas>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="resize-handle" id="resizeHandle"></div>
+        <h2>MLMatrix</h2>
+        <a href="https://github.com/maddestlabs/mlmatrix" target="_blank" class="repo-link">🔗 github.com/maddestlabs/mlmatrix</a>
+        
+        <div class="button-group">
+            <button onclick="startStop()" id="playBtn">PAUSE</button>
+            <button onclick="generateURL()">COPY URL</button>
+        </div>
+        
+        <div class="preset-buttons">
+            <button onclick="loadPreset('classic')">Classic</button>
+            <button onclick="loadPreset('red')">Red Alert</button>
+            <button onclick="loadPreset('cyber')">Cyber Blue</button>
+            <button onclick="loadPreset('minimal')">Minimal</button>
+        </div>
+        
+        <div class="control-group">
+            <label>Lead Color</label>
+            <select id="leadColor" onchange="updateConfig()">
+                <option value="green">Green</option>
+                <option value="red">Red</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+                <option value="cyan">Cyan</option>
+                <option value="magenta">Magenta</option>
+                <option value="white">White</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Trail Color</label>
+            <select id="trailColor" onchange="updateConfig()">
+                <option value="green">Green</option>
+                <option value="red">Red</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+                <option value="cyan">Cyan</option>
+                <option value="magenta">Magenta</option>
+                <option value="white">White</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Character Set</label>
+            <select id="charset" onchange="updateConfig()">
+                <option value="default">Default (Japanese)</option>
+                <option value="basic">Basic (AVEIOBS)</option>
+                <option value="lines">Lines (│║)</option>
+                <option value="braille">Braille</option>
+                <option value="bubbles">Bubbles</option>
+                <option value="custom">Custom</option>
+            </select>
+            <input type="text" id="customCharset" placeholder="Custom characters..." style="margin-top: 5px; display: none;" onchange="updateConfig()">
+        </div>
+        
+        <div class="control-group">
+            <label>Speed</label>
+            <input type="range" id="speed" min="0.1" max="10" step="0.1" value="2" onchange="updateConfig()">
+            <div class="range-value" id="speedValue">2.0</div>
+        </div>
+        
+        <div class="control-group">
+            <label>Drop Frequency</label>
+            <input type="range" id="frequency" min="0" max="100" step="1" value="100" onchange="updateConfig()">
+            <div class="range-value" id="frequencyValue">100%</div>
+        </div>
+        
+        <div class="control-group">
+            <label>Glitch Frequency</label>
+            <input type="range" id="glitch" min="0" max="20" step="1" value="2" onchange="updateConfig()">
+            <div class="range-value" id="glitchValue">2%</div>
+        </div>
+        
+        <div class="control-group">
+            <label>Eraser Chance</label>
+            <input type="range" id="eraser" min="0" max="10" step="1" value="0" onchange="updateConfig()">
+            <div class="range-value" id="eraserValue">0%</div>
+        </div>
+        
+        <div class="control-group">
+            <label>Max Trail Length</label>
+            <input type="range" id="maxTrail" min="10" max="100" step="5" value="100" onchange="updateConfig()">
+            <div class="range-value" id="maxTrailValue">100%</div>
+        </div>
+        
+        <div class="info">
+            <strong>Matrix Rain Web</strong><br>
+            Fullscreen browser version with real-time controls.
+            <div class="url-display" id="urlDisplay"></div>
+            <div class="nim-command" id="nimCommand"></div>
+        </div>
+    </div>
+
+    <script>
+        // Constants for character sets
+        const BASIC_CHARS = "AVEIOBS013587";
+        const LINES_CHARS = "│║";
+        const BRAILLE_CHARS = "⠭⠶⠠⠑⠊⠞⠙⠕⠗";
+        const BUBBLES_CHARS = "·ᵒᴼ";
+        const DEFAULT_CHARS = "ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ012345789Z:.=*+-<>¦";
+        
+        // Color definitions
+        const COLORS = {
+            green: '#00ff00',
+            red: '#ff0000',
+            blue: '#0000ff',
+            yellow: '#ffff00',
+            cyan: '#00ffff',
+            magenta: '#ff00ff',
+            white: '#ffffff'
+        };
+
+        // Configuration object
+        class Config {
+            constructor() {
+                this.leadColor = 'green';
+                this.trailColor = 'green';
+                this.charset = '';
+                this.speedMultiplier = 2.0;
+                this.glitchFrequency = 2;
+                this.eraserChance = 0;
+                this.maxTrailPercent = 100;
+                this.dropFrequency = 100;
+                this.terminalWidth = 120;
+                this.terminalHeight = 60;
+            }
+        }
+
+        // Drop class
+        class Drop {
+            constructor(x, height, config) {
+                const maxLength = Math.max(5, Math.floor((height * config.maxTrailPercent) / 100));
+                this.length = Math.floor(Math.random() * (maxLength - 5)) + 5;
+                
+                this.x = x;
+                this.y = 0;
+                this.speed = (Math.random() * 1.0 + 0.5) * config.speedMultiplier;
+                this.char = this.matrixChar(config.charset);
+                this.trailChars = new Array(this.length).fill(' ');
+                this.glitchChars = new Array(this.length).fill(' ');
+                this.glitchActive = new Array(this.length).fill(false);
+                this.trailPos = 0;
+                this.isDead = false;
+                this.lastUpdate = Date.now();
+                this.lastGlitchCheck = Date.now();
+                this.hasEraser = Math.random() * 100 < config.eraserChance;
+            }
+
+            matrixChar(charset) {
+                const charsToUse = charset || DEFAULT_CHARS;
+                const index = Math.floor(Math.random() * charsToUse.length);
+                let result = charsToUse[index];
+                
+                if (result === '\r' || result === '\n' || result === '\t' || result === '\b') {
+                    result = '+';
+                }
+                
+                return result;
+            }
+
+            update(height, now, config) {
+                let updated = false;
+                
+                if (now - this.lastUpdate >= (1000 / (10.0 * this.speed))) {
+                    this.lastUpdate = now;
+                    
+                    this.trailChars[this.trailPos] = this.char;
+                    this.trailPos = (this.trailPos + 1) % this.length;
+                    
+                    this.y += 1;
+                    this.char = this.matrixChar(config.charset);
+                    
+                    if (this.y - this.length > height) {
+                        this.isDead = true;
+                    }
+                    
+                    updated = true;
+                }
+                
+                if (now - this.lastGlitchCheck >= 100) {
+                    this.lastGlitchCheck = now;
+                    
+                    for (let i = 0; i < this.length; i++) {
+                        if (!this.glitchActive[i] && Math.random() * 100 < config.glitchFrequency) {
+                            this.glitchActive[i] = true;
+                            this.glitchChars[i] = this.matrixChar(config.charset);
+                        } else if (this.glitchActive[i] && Math.random() * 100 < 40) {
+                            this.glitchActive[i] = false;
+                        }
+                    }
+                }
+                
+                return updated;
+            }
+        }
+
+        // Eraser drop class
+        class EraserDrop {
+            constructor(drop) {
+                const followDistance = Math.floor(Math.random() * 10) + drop.length + 5;
+                this.x = drop.x;
+                this.y = Math.max(0, drop.y - followDistance);
+                this.speed = drop.speed * 0.95;
+                this.isDead = false;
+                this.lastUpdate = Date.now();
+            }
+
+            update(height, now) {
+                let updated = false;
+                
+                if (now - this.lastUpdate >= (1000 / (10.0 * this.speed))) {
+                    this.lastUpdate = now;
+                    this.y += 1;
+                    
+                    if (this.y > height) {
+                        this.isDead = true;
+                    }
+                    
+                    updated = true;
+                }
+                
+                return updated;
+            }
+        }
+
+        // Buffer class
+        class Buffer {
+            constructor(width, height) {
+                this.width = width;
+                this.height = height;
+                this.data = [];
+                
+                for (let y = 0; y < height; y++) {
+                    this.data[y] = [];
+                    for (let x = 0; x < width; x++) {
+                        this.data[y][x] = { ch: ' ', color: '#000000', bright: false };
+                    }
+                }
+            }
+
+            clear() {
+                for (let y = 0; y < this.height; y++) {
+                    for (let x = 0; x < this.width; x++) {
+                        this.data[y][x] = { ch: ' ', color: '#000000', bright: false };
+                    }
+                }
+            }
+
+            drawDrop(drop, config) {
+                const headY = drop.y;
+                const leadColor = COLORS[config.leadColor];
+                const trailColor = COLORS[config.trailColor];
+                
+                if (headY >= 0 && headY < this.height && drop.x < this.width) {
+                    this.data[headY][drop.x] = { ch: drop.char, color: leadColor, bright: true };
+                }
+                
+                for (let i = 0; i < drop.length; i++) {
+                    const y = headY - i - 1;
+                    if (y >= 0 && y < this.height && drop.x < this.width) {
+                        const trailIndex = (drop.trailPos - 1 - i + drop.length) % drop.length;
+                        
+                        let trailChar;
+                        if (drop.glitchActive[trailIndex]) {
+                            trailChar = drop.glitchChars[trailIndex];
+                        } else {
+                            trailChar = drop.trailChars[trailIndex];
+                        }
+                        
+                        if (trailChar !== ' ') {
+                            this.data[y][drop.x] = {
+                                ch: trailChar,
+                                color: trailColor,
+                                bright: i < 1
+                            };
+                        }
+                    }
+                }
+            }
+
+            drawEraser(eraser) {
+                const y = eraser.y;
+                if (y >= 0 && y < this.height && eraser.x < this.width) {
+                    this.data[y][eraser.x] = { ch: ' ', color: '#000000', bright: false };
+                }
+            }
+        }
+
+        // Main application class
+        class MatrixRain {
+            constructor() {
+                this.canvas = document.getElementById('matrixCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.config = new Config();
+                
+                this.drops = [];
+                this.erasers = [];
+                this.isRunning = false;
+                
+                this.resizeCanvas();
+                this.parseURLParams();
+                this.updateControlsFromConfig();
+                
+                window.addEventListener('resize', () => this.resizeCanvas());
+                
+                this.updateURLDisplay();
+            }
+
+            resizeCanvas() {
+                const sidebar = document.getElementById('sidebar');
+                const sidebarWidth = sidebar.classList.contains('hidden') ? 0 : parseInt(getComputedStyle(sidebar).width, 10);
+                this.canvas.width = window.innerWidth - sidebarWidth;
+                this.canvas.height = window.innerHeight;
+                
+                this.charWidth = 12;
+                this.charHeight = 16;
+                
+                this.config.terminalWidth = Math.floor(this.canvas.width / this.charWidth);
+                this.config.terminalHeight = Math.floor(this.canvas.height / this.charHeight);
+                
+                this.buffer = new Buffer(this.config.terminalWidth, this.config.terminalHeight);
+                
+                this.ctx.font = `${this.charHeight * 0.8}px monospace`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+            }
+
+            parseURLParams() {
+                const params = new URLSearchParams(window.location.search);
+                
+                if (params.has('leadColor')) {
+                    const color = params.get('leadColor').toLowerCase();
+                    if (COLORS[color]) this.config.leadColor = color;
+                }
+                
+                if (params.has('trailColor')) {
+                    const color = params.get('trailColor').toLowerCase();
+                    if (COLORS[color]) this.config.trailColor = color;
+                }
+                
+                if (params.has('charset')) {
+                    const charset = params.get('charset').toLowerCase();
+                    switch (charset) {
+                        case 'basic': this.config.charset = BASIC_CHARS; break;
+                        case 'lines': this.config.charset = LINES_CHARS; break;
+                        case 'braille': this.config.charset = BRAILLE_CHARS; break;
+                        case 'bubbles': this.config.charset = BUBBLES_CHARS; break;
+                        case 'default': this.config.charset = DEFAULT_CHARS; break;
+                        default: this.config.charset = params.get('charset');
+                    }
+                }
+                
+                if (params.has('speed')) {
+                    this.config.speedMultiplier = Math.max(0.1, parseFloat(params.get('speed')) || 2.0);
+                }
+                
+                if (params.has('glitch')) {
+                    this.config.glitchFrequency = Math.max(0, Math.min(100, parseInt(params.get('glitch')) || 2));
+                }
+                
+                if (params.has('eraser')) {
+                    this.config.eraserChance = Math.max(0, Math.min(100, parseInt(params.get('eraser')) || 0));
+                }
+                
+                if (params.has('maxTrail')) {
+                    this.config.maxTrailPercent = Math.max(1, Math.min(100, parseInt(params.get('maxTrail')) || 100));
+                }
+                
+                if (params.has('frequency')) {
+                    this.config.dropFrequency = Math.max(0, Math.min(100, parseInt(params.get('frequency')) || 100));
+                }
+            }
+
+            updateControlsFromConfig() {
+                document.getElementById('leadColor').value = this.config.leadColor;
+                document.getElementById('trailColor').value = this.config.trailColor;
+                
+                // Handle charset
+                const charsetSelect = document.getElementById('charset');
+                const customInput = document.getElementById('customCharset');
+                
+                if (this.config.charset === BASIC_CHARS) charsetSelect.value = 'basic';
+                else if (this.config.charset === LINES_CHARS) charsetSelect.value = 'lines';
+                else if (this.config.charset === BRAILLE_CHARS) charsetSelect.value = 'braille';
+                else if (this.config.charset === BUBBLES_CHARS) charsetSelect.value = 'bubbles';
+                else if (this.config.charset === DEFAULT_CHARS || !this.config.charset) charsetSelect.value = 'default';
+                else {
+                    charsetSelect.value = 'custom';
+                    customInput.style.display = 'block';
+                    customInput.value = this.config.charset;
+                }
+                
+                document.getElementById('speed').value = this.config.speedMultiplier;
+                document.getElementById('speedValue').textContent = this.config.speedMultiplier.toFixed(1);
+                
+                document.getElementById('frequency').value = this.config.dropFrequency;
+                document.getElementById('frequencyValue').textContent = this.config.dropFrequency + '%';
+                
+                document.getElementById('glitch').value = this.config.glitchFrequency;
+                document.getElementById('glitchValue').textContent = this.config.glitchFrequency + '%';
+                
+                document.getElementById('eraser').value = this.config.eraserChance;
+                document.getElementById('eraserValue').textContent = this.config.eraserChance + '%';
+                
+                document.getElementById('maxTrail').value = this.config.maxTrailPercent;
+                document.getElementById('maxTrailValue').textContent = this.config.maxTrailPercent + '%';
+            }
+
+            updateURLDisplay() {
+                const params = new URLSearchParams();
+                params.set('leadColor', this.config.leadColor);
+                params.set('trailColor', this.config.trailColor);
+                
+                // Handle charset parameter
+                if (this.config.charset === BASIC_CHARS) params.set('charset', 'basic');
+                else if (this.config.charset === LINES_CHARS) params.set('charset', 'lines');
+                else if (this.config.charset === BRAILLE_CHARS) params.set('charset', 'braille');
+                else if (this.config.charset === BUBBLES_CHARS) params.set('charset', 'bubbles');
+                else if (this.config.charset === DEFAULT_CHARS) params.set('charset', 'default');
+                else if (this.config.charset) params.set('charset', this.config.charset);
+                
+                params.set('speed', this.config.speedMultiplier);
+                params.set('glitch', this.config.glitchFrequency);
+                params.set('eraser', this.config.eraserChance);
+                params.set('maxTrail', this.config.maxTrailPercent);
+                params.set('frequency', this.config.dropFrequency);
+                
+                const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+                document.getElementById('urlDisplay').textContent = url;
+                
+                // Generate Nim command
+                this.updateNimCommand();
+            }
+
+            updateNimCommand() {
+                let command = './mlmatrix';
+                
+                // Add charset parameter
+                if (this.config.charset === BASIC_CHARS) {
+                    command += ' -c "AVEIOBS013587"';
+                } else if (this.config.charset === LINES_CHARS) {
+                    command += ' -c "│║"';
+                } else if (this.config.charset === BRAILLE_CHARS) {
+                    command += ' -c "⠭⠶⠠⠑⠊⠞⠙⠕⠗"';
+                } else if (this.config.charset === BUBBLES_CHARS) {
+                    command += ' -c "·ᵒᴼ"';
+                } else if (this.config.charset && this.config.charset !== DEFAULT_CHARS) {
+                    command += ` -c "${this.config.charset}"`;
+                }
+                
+                // Add lead color if not green
+                if (this.config.leadColor !== 'green') {
+                    command += ` --lead-color ${this.config.leadColor}`;
+                }
+                
+                // Add trail color if different from lead color
+                if (this.config.trailColor !== this.config.leadColor) {
+                    command += ` --trail-color ${this.config.trailColor}`;
+                }
+                
+                // Add speed if not default
+                if (this.config.speedMultiplier !== 2.0) {
+                    command += ` --speed ${this.config.speedMultiplier}`;
+                }
+                
+                // Add glitch frequency if not default
+                if (this.config.glitchFrequency !== 2) {
+                    command += ` --glitch ${this.config.glitchFrequency}`;
+                }
+                
+                // Add eraser chance if enabled
+                if (this.config.eraserChance > 0) {
+                    command += ` --eraser ${this.config.eraserChance}`;
+                }
+                
+                // Add max trail if not default
+                if (this.config.maxTrailPercent !== 100) {
+                    command += ` --max-trail ${this.config.maxTrailPercent}`;
+                }
+                
+                // Add frequency if not default
+                if (this.config.dropFrequency !== 100) {
+                    command += ` --frequency ${this.config.dropFrequency}`;
+                }
+                
+                document.getElementById('nimCommand').textContent = command;
+            }
+
+            render() {
+                this.ctx.fillStyle = '#000000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                for (let y = 0; y < this.buffer.height; y++) {
+                    for (let x = 0; x < this.buffer.width; x++) {
+                        const cell = this.buffer.data[y][x];
+                        if (cell.ch !== ' ') {
+                            this.ctx.fillStyle = cell.bright ? cell.color : this.dimColor(cell.color);
+                            this.ctx.fillText(
+                                cell.ch,
+                                x * this.charWidth + this.charWidth / 2,
+                                y * this.charHeight + this.charHeight / 2
+                            );
+                        }
+                    }
+                }
+            }
+
+            dimColor(color) {
+                const hex = color.replace('#', '');
+                const r = Math.floor(parseInt(hex.substr(0, 2), 16) * 0.3);
+                const g = Math.floor(parseInt(hex.substr(2, 2), 16) * 0.3);
+                const b = Math.floor(parseInt(hex.substr(4, 2), 16) * 0.3);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            update() {
+                if (!this.isRunning) return;
+                
+                const now = Date.now();
+                
+                this.buffer.clear();
+                
+                // Update drops
+                for (let i = this.drops.length - 1; i >= 0; i--) {
+                    this.drops[i].update(this.config.terminalHeight, now, this.config);
+                    
+                    if (this.drops[i].hasEraser && this.drops[i].y > 20) {
+                        this.erasers.push(new EraserDrop(this.drops[i]));
+                        this.drops[i].hasEraser = false;
+                    }
+                    
+                    this.buffer.drawDrop(this.drops[i], this.config);
+                    
+                    if (this.drops[i].isDead) {
+                        this.drops.splice(i, 1);
+                    }
+                }
+                
+                // Update erasers
+                for (let i = this.erasers.length - 1; i >= 0; i--) {
+                    this.erasers[i].update(this.config.terminalHeight, now);
+                    this.buffer.drawEraser(this.erasers[i]);
+                    
+                    if (this.erasers[i].isDead) {
+                        this.erasers.splice(i, 1);
+                    }
+                }
+                
+                // Create new drops with frequency scaling
+                const dropChance = this.config.dropFrequency / 1000; // Convert percentage to probability per column
+                for (let x = 0; x < this.config.terminalWidth; x++) {
+                    if (Math.random() < dropChance) {
+                        const existingDrop = this.drops.some(drop => drop.x === x);
+                        if (!existingDrop) {
+                            this.drops.push(new Drop(x, this.config.terminalHeight, this.config));
+                        }
+                    }
+                }
+                
+                this.render();
+            }
+
+            start() {
+                this.isRunning = true;
+                document.getElementById('playBtn').textContent = 'PAUSE';
+                this.gameLoop();
+            }
+
+            stop() {
+                this.isRunning = false;
+                document.getElementById('playBtn').textContent = 'PLAY';
+            }
+
+            gameLoop() {
+                if (this.isRunning) {
+                    this.update();
+                    requestAnimationFrame(() => this.gameLoop());
+                }
+            }
+        }
+
+        // Global variables
+        let matrixRain;
+
+        // Initialize the application
+        window.addEventListener('load', () => {
+            matrixRain = new MatrixRain();
+            matrixRain.start();
+            
+            // Initialize toggle button
+            const toggleBtn = document.getElementById('toggleBtn');
+            toggleBtn.textContent = '✕';
+            toggleBtn.title = 'Hide Controls';
+            
+            // Set initial sidebar width via JavaScript with all properties
+            const sidebar = document.getElementById('sidebar');
+            sidebar.style.width = '300px';
+            sidebar.style.minWidth = '300px';
+            sidebar.style.maxWidth = '300px';
+            
+            // Initialize resize functionality
+            initializeResize();
+        });
+
+        function initializeResize() {
+            const resizeHandle = document.getElementById('resizeHandle');
+            const sidebar = document.getElementById('sidebar');
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+            
+            function startResize(e) {
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = parseInt(sidebar.style.width) || 300;
+                
+                resizeHandle.classList.add('dragging');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                
+                // Prevent default to avoid text selection
+                e.preventDefault();
+                
+                console.log('Started resizing - startX:', startX, 'startWidth:', startWidth); // Debug log
+            }
+            
+            function doResize(e) {
+                if (!isResizing) return;
+                
+                // Calculate the difference in mouse movement
+                const deltaX = startX - e.clientX; // Positive when moving left (expanding), negative when moving right (shrinking)
+                const newWidth = startWidth + deltaX;
+                
+                // Apply constraints
+                const minWidth = 200;
+                const maxWidth = Math.min(800, window.innerWidth * 0.8);
+                const constrainedWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+                
+                // Set width with multiple methods to ensure it takes effect
+                sidebar.style.width = constrainedWidth + 'px';
+                sidebar.style.minWidth = constrainedWidth + 'px';
+                sidebar.style.maxWidth = constrainedWidth + 'px';
+                
+                // Force layout recalculation
+                sidebar.offsetWidth; // Reading this property forces a reflow
+                
+                // Force immediate canvas resize
+                matrixRain.resizeCanvas();
+                
+                console.log('Mouse X:', e.clientX, 'Delta:', deltaX, 'New width:', constrainedWidth, 'Computed width:', getComputedStyle(sidebar).width); // Debug log
+                e.preventDefault();
+            }
+            
+            function stopResize(e) {
+                if (isResizing) {
+                    isResizing = false;
+                    resizeHandle.classList.remove('dragging');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    
+                    console.log('Stopped resizing, final width:', sidebar.style.width); // Debug log
+                }
+            }
+            
+            // Mouse events
+            resizeHandle.addEventListener('mousedown', startResize);
+            document.addEventListener('mousemove', doResize);
+            document.addEventListener('mouseup', stopResize);
+            
+            // Touch events
+            resizeHandle.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    startResize({ clientX: touch.clientX, preventDefault: () => e.preventDefault() });
+                }
+            }, { passive: false });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (isResizing && e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    doResize({ clientX: touch.clientX, preventDefault: () => e.preventDefault() });
+                }
+            }, { passive: false });
+            
+            document.addEventListener('touchend', stopResize);
+            
+            // Double-click to reset width
+            resizeHandle.addEventListener('dblclick', () => {
+                sidebar.style.width = '300px';
+                sidebar.style.minWidth = '300px';
+                sidebar.style.maxWidth = '300px';
+                sidebar.offsetWidth; // Force reflow
+                matrixRain.resizeCanvas();
+                console.log('Reset to default width: 300px, computed:', getComputedStyle(sidebar).width);
+            });
+            
+            // Test function - you can call this in console to test
+            window.testResize = function(width) {
+                sidebar.style.width = width + 'px';
+                sidebar.style.minWidth = width + 'px';
+                sidebar.style.maxWidth = width + 'px';
+                sidebar.offsetWidth; // Force reflow
+                matrixRain.resizeCanvas();
+                console.log('Test resize to:', width, 'Applied:', sidebar.style.width, 'Computed:', getComputedStyle(sidebar).width);
+            };
+        }
+
+        // Control functions
+        function startStop() {
+            if (matrixRain.isRunning) {
+                matrixRain.stop();
+            } else {
+                matrixRain.start();
+            }
+        }
+
+        function updateConfig() {
+            const leadColor = document.getElementById('leadColor').value;
+            const trailColor = document.getElementById('trailColor').value;
+            const charsetSelect = document.getElementById('charset').value;
+            const customCharset = document.getElementById('customCharset').value;
+            const speed = parseFloat(document.getElementById('speed').value);
+            const frequency = parseInt(document.getElementById('frequency').value);
+            const glitch = parseInt(document.getElementById('glitch').value);
+            const eraser = parseInt(document.getElementById('eraser').value);
+            const maxTrail = parseInt(document.getElementById('maxTrail').value);
+            
+            matrixRain.config.leadColor = leadColor;
+            matrixRain.config.trailColor = trailColor;
+            matrixRain.config.speedMultiplier = speed;
+            matrixRain.config.dropFrequency = frequency;
+            matrixRain.config.glitchFrequency = glitch;
+            matrixRain.config.eraserChance = eraser;
+            matrixRain.config.maxTrailPercent = maxTrail;
+            
+            // Handle charset
+            const customInput = document.getElementById('customCharset');
+            if (charsetSelect === 'custom') {
+                customInput.style.display = 'block';
+                matrixRain.config.charset = customCharset || DEFAULT_CHARS;
+            } else {
+                customInput.style.display = 'none';
+                switch (charsetSelect) {
+                    case 'basic': matrixRain.config.charset = BASIC_CHARS; break;
+                    case 'lines': matrixRain.config.charset = LINES_CHARS; break;
+                    case 'braille': matrixRain.config.charset = BRAILLE_CHARS; break;
+                    case 'bubbles': matrixRain.config.charset = BUBBLES_CHARS; break;
+                    default: matrixRain.config.charset = DEFAULT_CHARS; break;
+                }
+            }
+            
+            // Update range value displays
+            document.getElementById('speedValue').textContent = speed.toFixed(1);
+            document.getElementById('frequencyValue').textContent = frequency + '%';
+            document.getElementById('glitchValue').textContent = glitch + '%';
+            document.getElementById('eraserValue').textContent = eraser + '%';
+            document.getElementById('maxTrailValue').textContent = maxTrail + '%';
+            
+            matrixRain.updateURLDisplay();
+        }
+
+        function generateURL() {
+            matrixRain.updateURLDisplay();
+            const urlDisplay = document.getElementById('urlDisplay').textContent;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(urlDisplay).then(() => {
+                    // Visual feedback
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = 'COPIED!';
+                    btn.style.background = '#0f0';
+                    btn.style.color = '#000';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '#222';
+                        btn.style.color = '#0f0';
+                    }, 1000);
+                }).catch(() => {
+                    alert('Could not copy to clipboard. URL is displayed in the info section.');
+                });
+            } else {
+                alert('URL is displayed in the info section. Copy it manually.');
+            }
+        }
+
+        function loadPreset(presetName) {
+            switch (presetName) {
+                case 'classic':
+                    matrixRain.config.leadColor = 'green';
+                    matrixRain.config.trailColor = 'green';
+                    matrixRain.config.charset = DEFAULT_CHARS;
+                    matrixRain.config.speedMultiplier = 2.0;
+                    matrixRain.config.glitchFrequency = 2;
+                    matrixRain.config.eraserChance = 0;
+                    matrixRain.config.dropFrequency = 80;
+                    matrixRain.config.maxTrailPercent = 100;
+                    break;
+                    
+                case 'red':
+                    matrixRain.config.leadColor = 'red';
+                    matrixRain.config.trailColor = 'red';
+                    matrixRain.config.charset = BASIC_CHARS;
+                    matrixRain.config.speedMultiplier = 3.0;
+                    matrixRain.config.glitchFrequency = 8;
+                    matrixRain.config.eraserChance = 2;
+                    matrixRain.config.dropFrequency = 60;
+                    matrixRain.config.maxTrailPercent = 80;
+                    break;
+                    
+                case 'cyber':
+                    matrixRain.config.leadColor = 'cyan';
+                    matrixRain.config.trailColor = 'blue';
+                    matrixRain.config.charset = LINES_CHARS;
+                    matrixRain.config.speedMultiplier = 1.5;
+                    matrixRain.config.glitchFrequency = 5;
+                    matrixRain.config.eraserChance = 1;
+                    matrixRain.config.dropFrequency = 40;
+                    matrixRain.config.maxTrailPercent = 60;
+                    break;
+                    
+                case 'minimal':
+                    matrixRain.config.leadColor = 'white';
+                    matrixRain.config.trailColor = 'white';
+                    matrixRain.config.charset = BUBBLES_CHARS;
+                    matrixRain.config.speedMultiplier = 1.0;
+                    matrixRain.config.glitchFrequency = 0;
+                    matrixRain.config.eraserChance = 0;
+                    matrixRain.config.dropFrequency = 20;
+                    matrixRain.config.maxTrailPercent = 40;
+                    break;
+            }
+            
+            matrixRain.updateControlsFromConfig();
+            matrixRain.updateURLDisplay();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggleBtn');
+            
+            sidebar.classList.toggle('hidden');
+            
+            if (sidebar.classList.contains('hidden')) {
+                toggleBtn.textContent = '⚙️';
+                toggleBtn.title = 'Show Controls';
+            } else {
+                toggleBtn.textContent = '✕';
+                toggleBtn.title = 'Hide Controls';
+            }
+            
+            // Trigger canvas resize after animation completes
+            setTimeout(() => {
+                matrixRain.resizeCanvas();
+            }, 300);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case ' ':
+                    e.preventDefault();
+                    startStop();
+                    break;
+                case 'r':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        location.reload();
+                    }
+                    break;
+                case '1':
+                    loadPreset('classic');
+                    break;
+                case '2':
+                    loadPreset('red');
+                    break;
+                case '3':
+                    loadPreset('cyber');
+                    break;
+                case '4':
+                    loadPreset('minimal');
+                    break;
+                case 'h':
+                case 'H':
+                    toggleSidebar();
+                    break;
+                case 'Escape':
+                    const sidebar = document.getElementById('sidebar');
+                    if (!sidebar.classList.contains('hidden')) {
+                        toggleSidebar();
+                    }
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
