@@ -4,7 +4,7 @@ MLMatrix is almost like [cmatrix](https://github.com/abishekvashok/cmatrix), but
 Try it out and and easily configure it via JavaScript (converted via Claude): [Web version](https://maddestlabs.github.io/mlmatrix/)
 
 Check out the intro video:
-[![MLMatrix | Matrix raining code for the terminal](https://img.youtube.com/vi/OCjeoTUsjFg/maxresdefault.jpg)](https://youtu.be/ajy2HMS3IYE)
+[![MLMatrix | Matrix raining code for the terminal](https://img.youtube.com/vi/OCjeoTUsjFg/maxresdefault.jpg)](https://youtu.be/OCjeoTUsjFg)
 
 Example of MLMatrix in Windows Terminal using [Apocalypse CRT](https://github.com/maddestlabs/apocalypse-crt) shader:
 [![Apocalypse CRT in Windows Terminal](https://raw.githubusercontent.com/maddestlabs/apocalypse-crt/refs/heads/main/screenshots/apocalypse-crt-mlmatrix.jpg 'Apocalypse CRT')](https://youtu.be/ajy2HMS3IYE)
